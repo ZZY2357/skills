@@ -1,0 +1,11 @@
+# local agent/tooling state (never publish)
+.pi/
+.pi-glla/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
