@@ -2,6 +2,16 @@
 .pi/
 .pi-glla/
 
+# python bytecode
+__pycache__/
+*.pyc
+
+# machine-specific tools inventory (ADR-0007): only the example template is tracked
+skills/solve-ctf/tools.md
+
+# fixture scratch
+.pi-fixtures/
+
 # OS noise
 .DS_Store
 Thumbs.db
