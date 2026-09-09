@@ -39,6 +39,8 @@ npx skills add ZZY2357/skills --skill bridge
 
 `setup-ctf-skills`、`solve-ctf`、`organize-ctf-writeups` 是一个**家族**：`setup-ctf-skills` 会把工具清单写到兄弟目录 `solve-ctf/tools.md`，三者必须保持同级。只装其中一个会让家族不完整 —— 用 `--skill '*'` 一次装全。
 
+另外，`organize-ctf-writeups` 生成 writeup 时会复用外部的 **`ctf-writeup`** skill。本仓库不收录第三方 skill（见上），请自行从它的上游安装；否则收尾只能产出骨架。
+
 ## bridge
 
 弱模型 harness 遇到难题时生成一个"首问包"，你复制到任意网页 chat（ChatGPT / Claude / Gemini …），把 chat 的答案复制回来，harness 自动解析。**你只做复制粘贴，不参与思考。** 中间多轮对话在网页里完成，harness 只参与"首问"和"终答"两头。
@@ -78,7 +80,7 @@ skill 会自动识别任务类型（`debug` / `design` / `review` / `improve` / 
 
 2026-09 由两个独立仓库（`harness-and-chat`、`ctf-workflow-ai`）合并而来，为的是让所有自研 skill 有**一条安装路径**：`npx skills add ZZY2357/skills`，而不是让人记住两个仓库。
 
-合并时只保留了 skill 目录。原来的 `harness/`（ctf 家族的测试脚手架）和 `PROTOCOL.md`（bridge 的非 skill-harness 适配说明，内容与 `SKILL.md` 重复）没有保留在工作树里，但仍留在 git 历史中。
+合并时保留了 skill 目录和 CTF 家族的 7 篇 ADR。原来的 `harness/`（ctf 家族的测试脚手架）和 `PROTOCOL.md`（bridge 的非 skill-harness 适配说明，内容与 `SKILL.md` 重复）没有保留在工作树里，但仍留在 git 历史中。
 
 ## License
 

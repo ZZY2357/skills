@@ -1,6 +1,6 @@
 ---
 name: bridge
-description: "Bridge a weak local harness model to a strong web-based chat model via copy-paste handoff. Use when the user wants to delegate a hard task (debug/design/code/review/improve) to a stronger external chat by generating a sentinel-formatted prompt package, then parse the answer back. The agent can auto-read the codebase to gather context for vague tasks like 'improve this project'. Triggers: /bridge, /bridge-back."
+description: "Bridge a weak local harness model to a strong web-based chat model via copy-paste handoff. Use when the user wants to delegate a hard task (debug/design/review/improve/code/general) to a stronger external chat by generating a sentinel-formatted prompt package, then parse the answer back. The agent can auto-read the codebase to gather context for vague tasks like 'improve this project'. Triggers: /bridge, /bridge-back."
 license: MIT
 ---
 
@@ -14,7 +14,7 @@ Bridge skill 让弱模型 harness 通过"用户复制粘贴"的人工中转，�
 
 1. 用户在 harness 里打 `/bridge` 触发 skill。可以带任务描述（"这个报错怎么修"），可以模糊（"帮我完善一下"），也可以**什么都不说**——空参数时 agent 自己看项目状态决定该问 chat 什么
 2. **如果任务描述模糊或为空，agent 应主动读取当前项目代码库，总结项目结构、关键文件、现状**，把总结作为 CONTEXT 段内容打包。用户不需要手动提供全部上下文
-3. skill 自动识别任务类型（debug/design/code/review/improve），生成一个"首问包"——里面是一段给 chat 看的提示词 + 项目上下文总结，教 chat 怎么回答、怎么把答案格式化好
+3. skill 自动识别任务类型（debug/design/review/improve/code/general），生成一个"首问包"——里面是一段给 chat 看的提示词 + 项目上下文总结，教 chat 怎么回答、怎么把答案格式化好
 4. 用户把首问包复制到网页 chat
 5. chat 在网页里跟用户多轮对话（harness 不参与中间轮），最终给出格式化好的答案
 6. 用户把答案复制回 harness，**开头带一行 `/bridge-back`** 触发解析
@@ -169,10 +169,6 @@ skill 读取用户输入的任务描述，按**优先级顺序**匹配关键词�
 - **INSTRUCTIONS 补充**: `请基于项目现状，指出可以改进的地方（按优先级排列）：架构问题、代码质量、缺失功能、性能问题、可维护性等。给出具体的改进建议和方向`
 - **这是最需要 agent 主动收集上下文的模板**——用户说"完善一下"时往往不知道具体哪里有问题，需要强模型看完代码后提出建议
 
-### code 模板（写代码）— 优先级 4
-
-- **触发关键词**: `写|实现|add|implement|create|refactor|编码|函数|类|方法`
-- **TASK 段填充**: `请帮我实现以下功能：<用户描述的目标>`
 ### code 模板（写代码）— 优先级 5
 
 - **触发关键词**: `写|实现|add|implement|create|编码|函数|类|方法`

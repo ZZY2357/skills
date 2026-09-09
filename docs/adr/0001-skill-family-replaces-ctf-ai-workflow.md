@@ -1,6 +1,6 @@
 # Skill family replaces ctf-ai-workflow
 
-**Status**: partially superseded — the family no longer fetches challenges or submits flags (ADR-0005); it keeps the repo-as-home and the migration of platform knowledge.
+**Status**: partially superseded — the family no longer fetches challenges or submits flags (ADR-0005); its source home is now the consolidated `ZZY2357/skills` catalog instead of a dedicated repo; the migration of platform knowledge stands.
 
 We are building the CTF automation as a **family of small verb-named skills** (mirroring the mattpocock engineering skills: a setup skill, a state-driven operator, a task decomposer) instead of continuing the single monolithic `ctf-ai-workflow` skill. This repo (`ctf-workflow-ai`) is the canonical source home; the old skill and its `progress.json` format are migrated into the family, then retired from install locations.
 

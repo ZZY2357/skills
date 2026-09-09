@@ -10,6 +10,10 @@ A public repository of skills authored in-house, installed with the `skills` CLI
 A folder containing `SKILL.md` with `name` and `description` frontmatter, loaded by a coding harness. The unit the CLI installs.
 _Avoid_: Plugin, extension, prompt, command
 
+**Harness**:
+A coding agent that loads skills — the thing a skill runs inside. Skills are written to be harness-agnostic; the CLI installs the same skill into whichever harness you use.
+_Avoid_: Agent, IDE, client (when meaning the runtime that loads a skill)
+
 **Skill family**:
 A set of skills designed to be installed together and that depend on each other at runtime; installing a subset leaves the family incomplete.
 _Avoid_: Bundle, suite, package (when referring to a family)
@@ -20,7 +24,9 @@ _Avoid_: Skills repo, collection, marketplace (a marketplace is third-party)
 
 ### CTF family
 
-The CTF family is the trio `setup-ctf-skills`, `solve-ctf`, `organize-ctf-writeups`: scaffold the working area, record each challenge's solving information while it is being solved, then organise the result into writeups. It does **not** fetch challenges from the platform and does **not** submit flags — the human does both.
+**CTF family**:
+The trio `setup-ctf-skills`, `solve-ctf`, `organize-ctf-writeups`: scaffold the working area, record each challenge's solving information while it is being solved, then organise the result into writeups. It does **not** fetch challenges from the platform and does **not** submit flags — the human does both. It reuses the external `ctf-writeup` skill for write-up prose; that skill is not part of this catalog.
+_Avoid_: CTF suite, CTF bundle
 
 **Competition (比赛)**:
 A single live CTF event, hosted on a remote platform, with its own deadline and challenge set. One working area per competition.
@@ -70,7 +76,7 @@ The end-of-competition pass: fill in missing writeups and merge all writeups int
 _Avoid_: Cleanup, archive, export
 
 **Writeup (WP)**:
-The durable per-challenge write-up, produced by `ctf-writeup`. Challenges are merged into one competition writeup file — `writeups.md` at the workspace root — each challenge an H2 section containing H3 `Summary` / `Solution` / `Flag`; the per-challenge file stays in the challenge folder.
+The durable per-challenge write-up, produced by the external `ctf-writeup` skill (not part of this catalog) and driven by `organize-ctf-writeups`. Challenges are merged into one competition writeup file — `writeups.md` at the workspace root — each challenge an H2 section containing H3 `Summary` / `Solution` / `Flag`; the per-challenge file stays in the challenge folder.
 _Avoid_: Notes, report
 
 **Submit (提交)**:
