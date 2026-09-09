@@ -8,7 +8,7 @@ license: MIT
 
 ## 概述
 
-这个 skill 解决一个常见痛点：本地跑的 coding harness（比如 opencode、claude code、codex）用的是比较弱的模型，遇到难任务搞不定；但网页版 chat（ChatGPT、Claude、Gemini 等任意网页 chat）用的是很强的模型。
+这个 skill 解决一个常见痛点：本地跑的 coding harness 用的是比较弱的模型，遇到难任务搞不定；但网页版 chat（ChatGPT、Claude、Gemini 等任意网页 chat）用的是很强的模型。
 
 Bridge skill 让弱模型 harness 通过"用户复制粘贴"的人工中转，借用强模型 chat 的推理能力。流程是这样的：
 
@@ -41,8 +41,8 @@ sentinel = 用特殊标记把一段文本分成几个段落，让人能读懂、
 ```
 ===BRIDGE_START===
 session: <8位随机ID>
-type: debug | design | code | review
-harness: opencode | claude-code | codex
+type: debug | design | review | improve | code | general
+harness: <当前 harness 名称>
 
 ===TASK===
 <任务描述，按类型模板填充>
@@ -130,9 +130,9 @@ harness 是弱模型，它怎么知道用户粘贴回来的是"终答包"，该�
 
 `/bridge <描述>` 是"发起求助"（生成首问包），`/bridge-back <回答>` 是"接收答案"（解析终答），语义相反。分开命令让弱模型 harness 不会混淆——看到 `/bridge` 就生成包，看到 `/bridge-back` 就解析包。
 
-### 非 opencode harness 适配
+### 触发短语可按 harness 自定义
 
-`/bridge-back` 只是约定短语。claude code 用户可以自己定义等价命令或直接说"这是 chat 的回答："后粘贴。核心原则：**触发短语可按 harness 自定义，但必须有一个明确入口**区分"发起求助"和"接收答案"两种语义。
+`/bridge` 和 `/bridge-back` 是默认约定短语。如果你的 harness 用别的命令机制，可以定义等价命令，或直接说"这是 chat 的回答："后粘贴。核心原则：**必须有一个明确入口**区分"发起求助"和"接收答案"两种语义。
 
 ---
 
@@ -248,7 +248,7 @@ skill 输出：
 ===BRIDGE_START===
 session: a1b2c3d4
 type: debug
-harness: opencode
+harness: <当前 harness 名称>
 
 ===TASK===
 请帮我调试以下问题：帮我看看这个报错 KeyError: 'user_id' in auth.py
@@ -366,16 +366,9 @@ INSTRUCTIONS 补充: `请给出完整代码，遵循现有风格，包含必要�
 ### 一键安装（推荐）
 
 ```bash
-npx skills add ok-komputer/harness-and-chat
+npx skills add ZZY2357/skills --skill bridge
 ```
 
-### opencode 用户手动安装
+### 手动安装
 
-把本文件复制到以下任一路径：
-
-- 全局：`~/.config/opencode/skills/bridge/SKILL.md`（Windows: `C:\Users\<用户名>\.config\opencode\skills\bridge\SKILL.md`）
-- 项目级：`<项目目录>\.opencode\skills\bridge\SKILL.md`
-
-### 其他 harness 用户
-
-本项目还提供 `PROTOCOL.md`——纯协议文档，不含 opencode 特有的 frontmatter。claude code / codex 用户可把协议内容贴进各自的系统提示（如 CLAUDE.md）、自定义命令、或 prompt 模板。**适配由用户自行完成**，PROTOCOL.md 只提供协议定义参考。
+把 `bridge/` 整个目录复制到你的 harness 的 skills 目录下（目录名保持 `bridge`）。具体路径见你的 harness 文档；任何能加载 `SKILL.md` 的 harness 都适用。

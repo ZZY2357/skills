@@ -1,6 +1,7 @@
 ---
 name: organize-ctf-writeups
 description: Wrap up a CTF competition — find solved challenges that lack a write-up, generate the missing ones from their notes, and merge every write-up into one competition deliverable. Use at the end of an event, or any time after a batch of solves. Do not use it to solve challenges, log in to a platform, or submit flags.
+license: MIT
 ---
 
 # organize-ctf-writeups

@@ -1,3 +1,18 @@
 # pi agent internals
 .pi/
 .pi-glla/
+
+# python bytecode (skill scripts)
+__pycache__/
+*.pyc
+
+# machine-specific tools inventory: only the example template is tracked
+skills/solve-ctf/tools.md
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/

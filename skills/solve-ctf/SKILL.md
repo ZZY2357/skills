@@ -1,6 +1,7 @@
 ---
 name: solve-ctf
 description: Take a CTF challenge in and solve it in one session. Use when the player hands over a challenge with its statement, target, or attachments — e.g. "/solve-ctf ez-sql <statement> 靶机：host:port 附件：./file.zip". Creates the challenge folder and notes, records the statement verbatim, then keeps the notes current while solving. Use it once per challenge; do not use it to fetch challenges, log in to a platform, or submit flags.
+license: MIT
 ---
 
 # solve-ctf

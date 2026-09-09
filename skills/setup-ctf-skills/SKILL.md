@@ -1,6 +1,7 @@
 ---
 name: setup-ctf-skills
 description: Scaffold a CTF competition workspace and write down its conventions. Use once per competition, before solving, to create the Challenges/ and WP/ folders, the notes template, the workspace spec (AGENTS.md or CLAUDE.md), and the machine's tools inventory. Use again at the start of a second competition with a different workspace directory. Do not use it to log in to a platform, fetch challenges, or submit flags.
+license: MIT
 ---
 
 # setup-ctf-skills
