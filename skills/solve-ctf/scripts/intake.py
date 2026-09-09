@@ -166,6 +166,17 @@ def parse_command(raw: str, base_dir: Path | None = None) -> dict[str, object]:
     hints = " ".join(fields["hints"]).strip()
     category_hint = fields["category"][0] if fields["category"] else ""
 
+    # The statement is the challenge description: drop the labelled metadata clauses
+    # (target, attachments, flag format, hints, category), which are recorded separately.
+    statement = rest
+    for index in range(len(matches) - 1, -1, -1):
+        start = matches[index].start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(rest)
+        statement = statement[:start] + statement[end:]
+    statement = re.sub(r"[ \t]{2,}", " ", statement).strip(" \t，,;；")
+    if not statement:
+        statement = rest
+
     attachments: list[str] = []
     for blob in fields["attachments"]:
         for piece in re.split(r"[,，;；\n]+", blob):
@@ -179,13 +190,20 @@ def parse_command(raw: str, base_dir: Path | None = None) -> dict[str, object]:
 
     return {
         "name": name,
-        "statement": rest,
+        "statement": statement,
         "target": target,
         "attachments": attachments,
         "flag_format": flag_format,
         "hints": hints,
         "category_hint": category_hint,
     }
+
+
+def _keyword_hit(keyword: str, lowered: str) -> bool:
+    """Match ASCII keywords on word boundaries, CJK keywords as substrings."""
+    if keyword.isascii():
+        return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", lowered) is not None
+    return keyword in lowered
 
 
 def infer_category(statement: str) -> tuple[str | None, dict[str, int]]:
@@ -195,7 +213,7 @@ def infer_category(statement: str) -> tuple[str | None, dict[str, int]]:
     for category, keywords in CATEGORY_KEYWORDS.items():
         score = 0
         for keyword in keywords:
-            if keyword in lowered:
+            if _keyword_hit(keyword, lowered):
                 score += 2 if " " in keyword else 1
         if score:
             scores[category] = score
@@ -233,12 +251,15 @@ def _render_notes(
     target: str,
     flag_format: str,
     statement: str,
-    attachments: list[tuple[str, str]],
+    attachments: list[tuple[str, str | None]],
     hints: str,
 ) -> str:
     if attachments:
         attachment_lines = "\n".join(
-            f"- `{source}` → `attachments/{copied}`" for source, copied in attachments
+            f"- `{source}` → `attachments/{copied}`"
+            if copied
+            else f"- `{source}` _(missing at intake — not copied)_"
+            for source, copied in attachments
         )
     else:
         attachment_lines = "_none_"
@@ -305,10 +326,8 @@ def main(argv: list[str] | None = None) -> int:
         if category is None:
             print(f"unknown category: {args.category!r}", file=sys.stderr)
             return 2
-        scores: dict[str, int] = {}
     elif parsed["category_hint"]:
         category = _canonical_category(str(parsed["category_hint"]))
-        scores = {}
         if category is None:
             print(
                 f"unknown category label: {parsed['category_hint']!r}",
@@ -335,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
     (challenge_dir / "solve").mkdir()
     (challenge_dir / "session").mkdir()
 
-    copied: list[tuple[str, str]] = []
+    copied: list[tuple[str, str | None]] = []
     attachment_report: list[dict[str, object]] = []
     for source_text in parsed["attachments"]:  # type: ignore[union-attr]
         source = Path(source_text).expanduser()
@@ -346,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         exists = source.is_file()
         if exists:
             shutil.copy2(source, destination)
-        copied.append((source_text, copied_name))
+        copied.append((source_text, copied_name if exists else None))
         attachment_report.append(
             {
                 "source": source_text,
@@ -365,7 +384,7 @@ def main(argv: list[str] | None = None) -> int:
         target=str(parsed["target"]),
         flag_format=str(parsed["flag_format"]),
         statement=str(parsed["statement"]),
-        attachments=copied,
+        attachments=copied,  # type: ignore[arg-type]
         hints=str(parsed["hints"]),
     )
     notes_path = challenge_dir / "notes.md"

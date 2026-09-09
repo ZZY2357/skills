@@ -90,3 +90,7 @@ python harness/run.py --case setup  # one case
 
 `harness/run.py` creates scratch workspaces under a temp directory, runs the skills'
 scripts, asserts the files they produce, and exits non-zero on any mismatch.
+
+`contract_checks.py` scans shipped artifacts (skills, README, `CONTEXT.md`, `docs/agents/`).
+`docs/adr/` is exempt because decision records must be free to name the skills the family
+rejected, and `harness/` is exempt because it contains the check itself.

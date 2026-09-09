@@ -15,11 +15,13 @@ flags. Pick a root such as `D:\ctf\<event-slug>\`.
 
 ### 1. Confirm the workspace directory
 
-Ask the player which directory to use if it is not already given, and a name for the
-competition (defaults to the directory name). Then run:
+Ask the player which directory to use if it is not already given, a name for the
+competition (defaults to the directory name), and the competition's flag format if it is
+uniform across challenges (e.g. `flag{...}`). Then run:
 
 ```bash
-python scripts/setup.py "<workspace-dir>" --competition "<competition name>"
+python <skill-dir>/scripts/setup.py "<workspace-dir>" --competition "<competition name>" \
+  --flag-format "flag{...}"
 ```
 
 This creates:
@@ -55,7 +57,7 @@ If it is missing, the script exits `4`. Then:
 2. Re-run setup with the answers:
 
 ```bash
-python scripts/setup.py "<workspace-dir>" \
+python <skill-dir>/scripts/setup.py "<workspace-dir>" \
   --cli-tool "sqlmap|SQL injection testing|sqlmap|1.7+" \
   --cli-tool "dirsearch|Web content discovery|dirsearch -u <url>|0.4.3" \
   --mcp "IDA MCP|Disassembly / decompilation|MCP ida|configured"
@@ -73,7 +75,7 @@ Or write the answers to a JSON file and pass `--tools-file answers.json`:
 To see where the inventory will be written without writing anything:
 
 ```bash
-python scripts/setup.py --print-tools-path
+python <skill-dir>/scripts/setup.py --print-tools-path
 ```
 
 ### 3. Report

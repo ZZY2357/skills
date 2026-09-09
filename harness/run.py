@@ -125,7 +125,15 @@ def set_note_section(path: Path, section: str, body: str) -> None:
 def setup_workspace(root: Path, name: str = "Demo CTF", tools: bool = True) -> tuple[Path, Path]:
     workspace = root / "workspace"
     tools_path = root / "tools" / "tools.md"
-    args = [str(workspace), "--competition", name, "--tools-path", str(tools_path)]
+    args = [
+        str(workspace),
+        "--competition",
+        name,
+        "--flag-format",
+        "flag{...}",
+        "--tools-path",
+        str(tools_path),
+    ]
     if tools:
         args += ["--cli-tool", "sqlmap|SQL injection|sqlmap|1.7"]
     run(SETUP, *args)
@@ -179,6 +187,7 @@ def case_setup(root: Path) -> Check:
         "writeups.md",
         "WP/",
         "Flag format",
+        "flag{...}",
         "Wrap-up",
         tools_path.as_posix(),
     ):
@@ -226,6 +235,18 @@ def case_setup(root: Path) -> Check:
     )
     check.contains("tools inventory missing", bare.stderr, "missing inventory should ask for tooling answers")
 
+    # Malformed tooling answers fail with the documented usage error, not a traceback.
+    bad = run(
+        SETUP,
+        str(bare_root / "workspace"),
+        "--tools-path",
+        str(bare_root / "tools.md"),
+        "--tools-file",
+        str(bare_root / "does-not-exist.json"),
+        expect=2,
+    )
+    check.contains("could not read tooling answers", bad.stderr, "bad tooling input should report a usage error")
+
     # ADR-0007: the default inventory path is the sibling solve-ctf skill folder.
     printed = run(SETUP, "--print-tools-path")
     check.equal(
@@ -258,6 +279,7 @@ def case_intake(root: Path) -> Check:
     for section in NOTES_SECTIONS:
         check.ok(re.search(rf"^##\s+{re.escape(section)}\s*$", notes, re.MULTILINE), f"notes missing section {section!r}")
     check.contains("小明说他的网站非常安全", notes, "statement should be recorded verbatim")
+    check.not_contains("靶机：", notes, "statement should not duplicate the target label")
     check.contains("1.2.3.4:1337", notes, "target should be recorded")
     check.contains("| Status | unsolved |", notes, "new notes should be unsolved")
     check.ok((challenge_dir / "attachments" / "handout.zip").is_file(), "attachment not copied into the challenge folder")
@@ -265,13 +287,17 @@ def case_intake(root: Path) -> Check:
 
     english = run(
         INTAKE,
-        "solve-ctf baby-rsa RSA with a small e, flag format: flag{...} target: nc 10.0.0.5 31337",
+        "solve-ctf baby-rsa RSA with a small e, flag format: flag{...} "
+        f"target: nc 10.0.0.5 31337 attachments: {attachment.as_posix()} hints: check small exponents",
         "--workspace",
         str(workspace),
     )
     english_summary = json.loads(english.stdout)
     check.equal(english_summary["category"], "Crypto", "English intake category")
     check.equal(english_summary["flag_format"], "flag{...}", "English intake flag format")
+    check.equal(len(english_summary["attachments"]), 1, "English attachments label should be parsed")
+    english_notes = Path(english_summary["notes"]).read_text(encoding="utf-8")
+    check.contains("check small exponents", english_notes, "English hints label should be recorded")
 
     collision = run(INTAKE, "solve-ctf baby-rsa another RSA task", "--workspace", str(workspace))
     collision_summary = json.loads(collision.stdout)
@@ -298,6 +324,28 @@ def case_intake(root: Path) -> Check:
     spaced_summary = json.loads(spaced_result.stdout)
     check.equal(len(spaced_summary["attachments"]), 1, "a path with a space should stay one attachment")
     check.ok(spaced_summary["attachments"][0]["exists"], "the spaced attachment should be found")
+
+    # A missing attachment is reported, not silently claimed as copied.
+    missing = run(
+        INTAKE,
+        f"solve-ctf missing-attach a web challenge 附件：{root / 'not-here.zip'}",
+        "--workspace",
+        str(workspace),
+    )
+    missing_summary = json.loads(missing.stdout)
+    check.ok(not missing_summary["attachments"][0]["exists"], "missing attachment should be reported")
+    check.equal(missing_summary["attachments"][0]["copied"], None, "missing attachment should not be claimed as copied")
+    missing_notes = Path(missing_summary["notes"]).read_text(encoding="utf-8")
+    check.contains("missing at intake", missing_notes, "missing attachment should be marked in notes")
+
+    # Keyword scoring must not fire on substrings (ai in explain, des in modes).
+    puzzle = run(
+        INTAKE,
+        "solve-ctf puzzle-box please explain the modes of this puzzle",
+        "--workspace",
+        str(workspace),
+    )
+    check.equal(json.loads(puzzle.stdout)["category"], "Misc", "substring keywords should not mis-file the challenge")
 
     ambiguous = run(
         INTAKE,
@@ -333,6 +381,10 @@ def case_intake(root: Path) -> Check:
         "Dead ends",
         "--text",
         "a WAF blocked UNION payloads",
+        "--section",
+        "Tools & versions",
+        "--text",
+        "sqlmap 1.7, python 3.14",
         "--script-file",
         str(exploit),
         "--field",
@@ -343,6 +395,7 @@ def case_intake(root: Path) -> Check:
     updated = (challenge_dir / "notes.md").read_text(encoding="utf-8")
     check.contains("the login form is injectable", updated, "observations should be recorded")
     check.contains("a WAF blocked UNION payloads", updated, "dead ends should be recorded")
+    check.contains("sqlmap 1.7, python 3.14", updated, "tool versions should be recorded")
     check.contains("print('flag{ez}')", updated, "the working script should be recorded")
     check.contains("| Status | solved |", updated, "status should be updated")
     check.contains("| Flag | flag{ez_sql} |", updated, "flag should be recorded")

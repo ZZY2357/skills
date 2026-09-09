@@ -12,7 +12,7 @@ Exit codes:
 
 from __future__ import annotations
 
-import importlib.util
+import ast
 import re
 import subprocess
 import sys
@@ -119,13 +119,19 @@ def _iter_files() -> list[Path]:
 
 
 def _load_categories(script: Path) -> list[str] | None:
-    spec = importlib.util.spec_from_file_location(f"_contract_{script.stem}", script)
-    if spec is None or spec.loader is None:
-        return None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    categories = getattr(module, "CATEGORIES", None)
-    return list(categories) if isinstance(categories, (list, tuple)) else None
+    """Read the CATEGORIES literal without importing the script."""
+    tree = ast.parse(script.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "CATEGORIES":
+                try:
+                    value = ast.literal_eval(node.value)
+                except (ValueError, SyntaxError):
+                    return None
+                return list(value) if isinstance(value, (list, tuple)) else None
+    return None
 
 
 def check_frontmatter(report: Report) -> None:

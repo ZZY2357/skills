@@ -253,7 +253,11 @@ def main(argv: list[str] | None = None) -> int:
     if tools_existed:
         reused.append(tools_path.as_posix())
     else:
-        entries = _load_entries(args)
+        try:
+            entries = _load_entries(args)
+        except (OSError, ValueError, argparse.ArgumentTypeError) as error:
+            print(f"could not read tooling answers: {error}", file=sys.stderr)
+            return 2
         if not entries:
             print(
                 "tools inventory missing at {path}; re-run with --cli-tool/--mcp/--tools-file "

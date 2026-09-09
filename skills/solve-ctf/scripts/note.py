@@ -35,7 +35,7 @@ SECTIONS = (
     "Conclusion",
 )
 FIELDS = ("Challenge", "Category", "Target", "Flag format", "Status", "Flag")
-PLACEHOLDERS = {"", "-", "—", "_none_", "_none yet_", "_(none yet)_"}
+PLACEHOLDERS = {"", "-", "—", "none", "_none_", "_none yet_", "_(none yet)_", "n/a", "tbd"}
 
 SECTION_HEADING = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 FIELD_ROW = re.compile(r"^\|\s*(.+?)\s*\|\s*(.*?)\s*\|\s*$")

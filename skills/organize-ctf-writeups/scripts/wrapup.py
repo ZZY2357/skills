@@ -24,6 +24,7 @@ import json
 import re
 import shutil
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 CATEGORIES = [
@@ -214,11 +215,31 @@ def render_writeup(notes: dict[str, object], challenge_dir: Path, flag: str | No
     )
 
 
-def discover_challenges(workspace: Path) -> list[dict[str, object]]:
+@dataclass
+class Challenge:
+    """One challenge folder and what wrap-up knows about it."""
+
+    category: str
+    challenge: str
+    challenge_dir: Path
+    notes_path: Path
+    notes: dict[str, object]
+    solved: bool
+    flag: str | None
+    source: str | None
+    writeup: Path
+
+    @property
+    def order_key(self) -> tuple[int, str, str]:
+        rank = CATEGORIES.index(self.category) if self.category in CATEGORIES else len(CATEGORIES)
+        return rank, self.category, self.challenge
+
+
+def discover_challenges(workspace: Path) -> list[Challenge]:
     root = workspace / "Challenges"
     if not root.is_dir():
         return []
-    found: list[dict[str, object]] = []
+    found: list[Challenge] = []
     for category_dir in sorted(p for p in root.iterdir() if p.is_dir()):
         for challenge_dir in sorted(p for p in category_dir.iterdir() if p.is_dir()):
             notes_path = challenge_dir / "notes.md"
@@ -226,8 +247,7 @@ def discover_challenges(workspace: Path) -> list[dict[str, object]]:
                 continue
             notes = parse_notes(notes_path.read_text(encoding="utf-8", errors="ignore"))
             fields = notes["fields"]  # type: ignore[assignment]
-            flag_format = _field(fields, "Flag format")
-            pattern = _flag_pattern(flag_format)
+            pattern = _flag_pattern(_field(fields, "Flag format"))
             status = _field(fields, "Status").strip().lower()
             note_flag = _field(fields, "Flag")
             if status.startswith("solved"):
@@ -237,25 +257,19 @@ def discover_challenges(workspace: Path) -> list[dict[str, object]]:
                 solved = flag is not None
                 source = f"transcript:{transcript}" if transcript else None
             found.append(
-                {
-                    "category": category_dir.name,
-                    "challenge": _first_meaningful(_field(fields, "Challenge"), challenge_dir.name),
-                    "challenge_dir": challenge_dir,
-                    "notes_path": notes_path,
-                    "notes": notes,
-                    "solved": solved,
-                    "flag": flag,
-                    "source": source,
-                    "writeup": challenge_dir / "writeup.md",
-                }
+                Challenge(
+                    category=category_dir.name,
+                    challenge=_first_meaningful(_field(fields, "Challenge"), challenge_dir.name),
+                    challenge_dir=challenge_dir,
+                    notes_path=notes_path,
+                    notes=notes,
+                    solved=solved,
+                    flag=flag,
+                    source=source,
+                    writeup=challenge_dir / "writeup.md",
+                )
             )
-
-    def order(item: dict[str, object]) -> tuple[int, str, str]:
-        category = str(item["category"])
-        rank = CATEGORIES.index(category) if category in CATEGORIES else len(CATEGORIES)
-        return rank, category, str(item["challenge"])
-
-    return sorted(found, key=order)
+    return sorted(found, key=lambda item: item.order_key)
 
 
 def _persist_recovered_flag(notes_path: Path, flag: str | None) -> None:
@@ -315,8 +329,8 @@ def main(argv: list[str] | None = None) -> int:
         return 5
 
     challenges = discover_challenges(workspace)
-    solved = [c for c in challenges if c["solved"]]
-    skipped = [c for c in challenges if not c["solved"]]
+    solved = [c for c in challenges if c.solved]
+    skipped = [c for c in challenges if not c.solved]
 
     if args.detect:
         print(
@@ -325,15 +339,15 @@ def main(argv: list[str] | None = None) -> int:
                     "competition": competition_name(workspace),
                     "solved": [
                         {
-                            "challenge": c["challenge"],
-                            "category": c["category"],
-                            "source": c["source"],
-                            "flag": c["flag"],
-                            "has_writeup": Path(c["writeup"]).is_file(),  # type: ignore[arg-type]
+                            "challenge": c.challenge,
+                            "category": c.category,
+                            "source": c.source,
+                            "flag": c.flag,
+                            "has_writeup": c.writeup.is_file(),
                         }
                         for c in solved
                     ],
-                    "skipped": [{"challenge": c["challenge"], "category": c["category"]} for c in skipped],
+                    "skipped": [{"challenge": c.challenge, "category": c.category} for c in skipped],
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -343,29 +357,22 @@ def main(argv: list[str] | None = None) -> int:
 
     rendered: list[str] = []
     for item in solved:
-        if str(item["source"]).startswith("transcript"):
-            _persist_recovered_flag(item["notes_path"], item["flag"])  # type: ignore[arg-type]
-        writeup_path: Path = item["writeup"]  # type: ignore[assignment]
-        if args.render and not writeup_path.is_file():
-            writeup_path.write_text(
-                render_writeup(
-                    item["notes"],  # type: ignore[arg-type]
-                    item["challenge_dir"],  # type: ignore[arg-type]
-                    flag=str(item["flag"]) if item["flag"] else None,
-                ),
+        if (args.render or args.merge) and item.source and item.source.startswith("transcript"):
+            _persist_recovered_flag(item.notes_path, item.flag)
+        if args.render and not item.writeup.is_file():
+            item.writeup.write_text(
+                render_writeup(item.notes, item.challenge_dir, flag=item.flag),
                 encoding="utf-8",
             )
-            rendered.append(writeup_path.as_posix())
+            rendered.append(item.writeup.as_posix())
 
     merged_path = workspace / "writeups.md"
     wp_dir = workspace / "WP"
     wp_written: list[str] = []
     if args.merge:
-        sections: list[str] = []
-        for item in solved:
-            writeup_path = item["writeup"]  # type: ignore[assignment]
-            if writeup_path.is_file():
-                sections.append(writeup_path.read_text(encoding="utf-8").strip())
+        sections = [
+            c.writeup.read_text(encoding="utf-8").strip() for c in solved if c.writeup.is_file()
+        ]
         body = "\n\n".join(sections).strip()
         merged = f"# {competition_name(workspace)} — Write-ups\n\n{body}\n"
         merged_path.write_text(merged, encoding="utf-8")
@@ -374,26 +381,25 @@ def main(argv: list[str] | None = None) -> int:
         (wp_dir / "writeups.md").write_text(merged, encoding="utf-8")
         wp_written.append((wp_dir / "writeups.md").as_posix())
         for item in solved:
-            writeup_path = item["writeup"]  # type: ignore[assignment]
-            if not writeup_path.is_file():
+            if not item.writeup.is_file():
                 continue
-            destination = wp_dir / f"{item['category']}-{item['challenge']}.md"
-            shutil.copy2(writeup_path, destination)
+            destination = wp_dir / f"{item.category}-{item.challenge}.md"
+            shutil.copy2(item.writeup, destination)
             wp_written.append(destination.as_posix())
 
     summary = {
         "competition": competition_name(workspace),
         "solved": [
             {
-                "challenge": c["challenge"],
-                "category": c["category"],
-                "source": c["source"],
-                "flag": c["flag"],
-                "writeup": Path(c["writeup"]).as_posix(),  # type: ignore[arg-type]
+                "challenge": c.challenge,
+                "category": c.category,
+                "source": c.source,
+                "flag": c.flag,
+                "writeup": c.writeup.as_posix(),
             }
             for c in solved
         ],
-        "skipped": [{"challenge": c["challenge"], "category": c["category"]} for c in skipped],
+        "skipped": [{"challenge": c.challenge, "category": c.category} for c in skipped],
         "rendered": rendered,
         "writeups_md": merged_path.as_posix() if args.merge else None,
         "wp": wp_written,
